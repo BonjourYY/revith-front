@@ -1,87 +1,83 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
-import { Analytics } from '@vercel/analytics/vue'
+// import { Analytics } from '@vercel/analytics/vue'
+import { onMounted, ref } from 'vue'
+import { getChangGuanAuthCode } from './api/changguanAuth'
+// import { getUserInfo, getWXAuthCode } from './api/wxAuth'
+
+const userInfo = ref({})
+
+// onMounted(async () => {
+//   const params = new URLSearchParams(window.location.search)
+//   if (params.get('code')) {
+//     const data = await getUserInfo(params.get('code'))
+//     userInfo.value = data
+//   } else {
+//     const { url } = await getWXAuthCode()
+//     window.location.href = url
+//   }
+// })
+
+onMounted(() => {
+  function isCGAppWeb() {
+    const ua = window.navigator.userAgent.toLowerCase()
+    return ua.indexOf('changguan') !== -1
+  }
+
+  // CGApp环境检查, 检查是否在常观APP内使用
+  function CGAppWebReady() {
+    return new Promise((resolve, reject) => {
+      if (isCGAppWeb()) {
+        if (window.cgapp) {
+          resolve()
+        } else {
+          const timeout = setTimeout(() => {
+            reject(new Error('常观App环境检测超时，未找到cgapp对象'))
+          }, 3000)
+
+          document.addEventListener(
+            'cgappjsbridgeready',
+            () => {
+              clearTimeout(timeout)
+              resolve()
+            },
+            false,
+          )
+        }
+      } else {
+        reject(new Error('请在常观App内打开页面'))
+      }
+    })
+  }
+
+  CGAppWebReady().then(() => {
+    // 配置应用使用client_id, 常观APP会对应用进行权限校验. 不调用无法使用jsapis
+    cgapp.config({
+      client_id: '2025041415211646',
+    })
+    // 配置应用成功后会从ready中进行回调.
+    // 如果不是需要同步调用的方法, 可以不写在ready()中. ready()回调方法保证了已经通过配置验证
+    cgapp.ready(() => {
+      cgapp.login({
+        scopes: 'base mobile',
+        state: 'jackfan',
+        redirect_uri: 'https://revith.cn',
+        success: async (res) => {
+          const code = res.code
+          const state = res.state
+          // 使用code请求应用自己的登录接口, 换取应用自己的登录状态. 可参考微信公众号授权
+          // .....
+          // .....
+          const data = await getChangGuanAuthCode(res.code)
+          userInfo.value = { code, state, data }
+        },
+      })
+    })
+  })
+})
 </script>
 
 <template>
-  <Analytics />
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
-
-  <RouterView />
+  <!-- <Analytics /> -->
+  <p>123123</p>
+  <p>{{ userInfo }}</p>
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
