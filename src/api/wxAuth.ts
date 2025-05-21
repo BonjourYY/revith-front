@@ -1,7 +1,7 @@
 import { HTTP } from '.'
 
 export const getWXAuthCode = (): Promise<{ url: string }> => {
-  return HTTP.get('auth/wx')
+  return HTTP.get('v1/auth/wechat')
 }
 
 export const getUserInfo = (code: string | null) => {
