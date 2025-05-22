@@ -13,8 +13,7 @@ onMounted(async () => {
     userInfo.value = data
   } else {
     const { url } = await getWXAuthCode()
-    console.log(url)
-    // window.location.href = url
+    window.location.href = url
   }
 })
 
